@@ -1,9 +1,14 @@
 """Tests for MarkovProcess class."""
 
+from pathlib import Path
+
 import numpy as np
 
 from rlcore.tabular import MarkovProcess
 from rlcore.tabular.visualization import plot_markov_process
+
+OUTPUT_DIR = Path(__file__).parent.parent / "test_output"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 # Example 1: Simple Weather Markov Process
@@ -39,7 +44,7 @@ def test_simple_weather():
         )
 
     # Visualization - save PNG
-    plot_markov_process(mp, "weather_markov_process.png")
+    plot_markov_process(mp, str(OUTPUT_DIR / "weather_markov_process.png"))
 
     # Test cases - Basic properties
     assert mp.num_states == 2
@@ -109,7 +114,7 @@ def test_student():
         )
 
     # Visualization - save PNG
-    plot_markov_process(mp, "student_markov_process.png")
+    plot_markov_process(mp, str(OUTPUT_DIR / "student_markov_process.png"))
 
     # Test cases - Basic properties
     assert mp.num_states == 5

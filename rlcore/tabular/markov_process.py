@@ -110,12 +110,33 @@ class MarkovProcess[State]:
 
     def compute_stationary_distribution(
         self,
+        method: str = "analytical",
         tolerance: float = 1e-10,
+        max_iterations: int = 1000,
     ) -> NDArray[np.float64] | None:
         """Compute stationary distribution if it exists.
-        Finds π such that π = π @ P.
-        Computes left eigenvector of P with eigenvalue 1.
+
+        Finds π such that π = πP (left eigenvector with eigenvalue 1).
+
+        For method='analytical': Computes left eigenvector of P with eigenvalue 1.
+
+        For method='iterative': Repeatedly applies π_{k+1} = π_k @ P until
+        convergence. Equivalent to computing π_0 @ P^N for large N.
         """
+        if method == "analytical":
+            return self._compute_stationary_analytical(tolerance)
+        elif method == "iterative":
+            return self._compute_stationary_iterative(tolerance, max_iterations)
+        else:
+            raise ValueError(
+                f"Unknown method: {method}. Use 'analytical' or 'iterative'."
+            )
+
+    def _compute_stationary_analytical(
+        self,
+        tolerance: float,
+    ) -> NDArray[np.float64] | None:
+        """Compute stationary distribution via eigendecomposition."""
         # Transpose to get right eigenvectors of P^T, then transpose back
         eigenvalues, eigenvectors = np.linalg.eig(self._transition_matrix.T)
 
@@ -134,6 +155,31 @@ class MarkovProcess[State]:
         stationary = stationary / np.sum(stationary)
 
         return stationary
+
+    def _compute_stationary_iterative(
+        self,
+        tolerance: float,
+        max_iterations: int,
+    ) -> NDArray[np.float64] | None:
+        """Compute stationary distribution via power iteration.
+
+        Iteratively computes π_{k+1} = π_k @ P until convergence.
+        This is equivalent to computing π_0 @ P^N for large N.
+        """
+        # Start with uniform distribution
+        distribution = np.ones(self._num_states) / self._num_states
+
+        for _ in range(max_iterations):
+            # π_{k+1} = π_k @ P
+            new_distribution = distribution @ self._transition_matrix
+
+            if np.allclose(distribution, new_distribution, atol=tolerance):
+                return new_distribution
+
+            distribution = new_distribution
+
+        # Return current estimate even if not fully converged
+        return distribution
 
     def plot(self, **kwargs):
         from rlcore.tabular.visualization import plot_transition_graph

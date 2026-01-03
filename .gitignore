@@ -11,3 +11,6 @@ wheels/
 
 # Ruff cache
 .ruff_cache
+
+# Test output (generated plots/graphs)
+test_output/

@@ -7,6 +7,7 @@ from rlcore.tabular.exceptions import (
     InvalidTransitionMatrixError,
 )
 from rlcore.tabular.markov_process import MarkovProcess
+from rlcore.tabular.markov_reward_process import MarkovRewardProcess
 
 __all__ = [
     "InvalidDiscountFactorError",
