@@ -176,39 +176,9 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
 
         return plot_value_function(self, method=method, **kwargs)
 
-    def plot_reward_graph(self, **kwargs):
-        """Plot transition graph with reward-colored nodes.
 
-        Requires networkx and matplotlib to be installed.
-
-        Args:
-            **kwargs: Keyword arguments passed to plot_reward_transition_graph().
-                Common options:
-                - layout: 'spring', 'circular', 'kamada_kawai' (default: 'spring')
-                - node_size: Size of nodes (default: 2000)
-                - cmap: Colormap for rewards (default: 'RdYlGn')
-                - edge_labels: Show transition probabilities (default: True)
-                - figsize: Figure size tuple (default: (12, 8))
-                - title: Plot title (default: auto-generated)
-
-        Returns:
-            Matplotlib Figure object.
-
-        Raises:
-            ImportError: If networkx or matplotlib are not installed.
-
-        Example:
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
-            >>> states = ["A", "B", "C"]
-            >>> P = np.array([[0.5, 0.3, 0.2], [0.2, 0.5, 0.3], [0.3, 0.2, 0.5]])
-            >>> R = np.array([1.0, 0.0, -1.0])
-            >>> mrp = MarkovRewardProcess(states, P, R, gamma=0.9)
-            >>> fig = mrp.plot_reward_graph()
-            >>> plt.show()
-        """
+    def plot(self, **kwargs):
         from rlcore.tabular.visualization import plot_reward_transition_graph
-
         return plot_reward_transition_graph(self, **kwargs)
 
     def __repr__(self) -> str:

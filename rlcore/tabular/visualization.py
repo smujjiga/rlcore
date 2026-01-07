@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from graphviz import Digraph
 from matplotlib.figure import Figure
+from tqdm import tqdm
 
 from rlcore.tabular.markov_process import MarkovProcess
 from rlcore.tabular.markov_reward_process import MarkovRewardProcess
@@ -144,7 +145,7 @@ def plot_reward_transition_graph(
 
     # Add nodes with reward-based coloring
     state_list = list(mrp.states)
-    for i, state in enumerate(state_list):
+    for i, state in tqdm(enumerate(state_list), total=len(state_list), desc="Nodes"):
         reward = rewards[i]
         fill_color = reward_to_hex(normalized_rewards[i])
         # Use black text for light colors, white for dark
@@ -163,7 +164,8 @@ def plot_reward_transition_graph(
 
     # Add edges with transition probabilities
     transition_matrix = mrp.transition_matrix
-    for i, from_state in enumerate(state_list):
+    n = len(state_list)
+    for i, from_state in tqdm(enumerate(state_list), total=n, desc="Edges"):
         for j, to_state in enumerate(state_list):
             prob = transition_matrix[i, j]
             if prob > 0:
