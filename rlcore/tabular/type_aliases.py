@@ -1,7 +1,6 @@
 """Type definitions for tabular reinforcement learning."""
+# Probability value in range [0, 1]
+type Probability = float
 
-# Type alias for probability values
-Probability = float
-
-# Type alias for discount factor
-DiscountFactor = float
+# Discount factor (gamma) in range [0, 1]
+type DiscountFactor = float

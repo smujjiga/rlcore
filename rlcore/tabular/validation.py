@@ -69,6 +69,12 @@ def validate_transition_matrix(
             f"got {transition_matrix.shape}"
         )
 
+    # Check for NaN or Inf values
+    if np.any(np.isnan(transition_matrix)):
+        raise InvalidTransitionMatrixError("Transition matrix contains NaN values")
+    if np.any(np.isinf(transition_matrix)):
+        raise InvalidTransitionMatrixError("Transition matrix contains Inf values")
+
     # Check if each row is a valid probability distribution
     try:
         validate_probability_distribution(transition_matrix, axis=1)
@@ -77,6 +83,29 @@ def validate_transition_matrix(
             f"Each row of transition matrix must be a valid probability "
             f"distribution: {e}"
         ) from e
+
+
+def validate_reward_function(
+    reward_function: NDArray[np.float64], num_states: int
+) -> None:
+    """Validate reward function shape and values.
+
+    Args:
+        reward_function: Vector of rewards per state.
+        num_states: Expected number of states.
+
+    Raises:
+        ValueError: If reward function is invalid.
+    """
+    if reward_function.shape != (num_states,):
+        raise ValueError(
+            f"Reward function must have shape ({num_states},), "
+            f"got {reward_function.shape}"
+        )
+    if np.any(np.isnan(reward_function)):
+        raise ValueError("Reward function contains NaN values")
+    if np.any(np.isinf(reward_function)):
+        raise ValueError("Reward function contains Inf values")
 
 
 def validate_discount_factor(gamma: float) -> None:

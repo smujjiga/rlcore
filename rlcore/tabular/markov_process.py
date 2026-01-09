@@ -88,6 +88,9 @@ class MarkovProcess[State]:
         num_steps: int,
         rng: np.random.Generator | None = None,
     ) -> list[State]:
+        if num_steps < 0:
+            raise ValueError(f"num_steps must be non-negative, got {num_steps}")
+
         trajectory = [initial_state]
         current_state = initial_state
 
@@ -165,6 +168,9 @@ class MarkovProcess[State]:
 
         Iteratively computes π_{k+1} = π_k @ P until convergence.
         This is equivalent to computing π_0 @ P^N for large N.
+
+        Returns:
+            Stationary distribution if converged, None otherwise.
         """
         # Start with uniform distribution
         distribution = np.ones(self._num_states) / self._num_states
@@ -178,13 +184,8 @@ class MarkovProcess[State]:
 
             distribution = new_distribution
 
-        # Return current estimate even if not fully converged
-        return distribution
-
-    def plot(self, **kwargs):
-        from rlcore.tabular.visualization import plot_transition_graph
-
-        return plot_transition_graph(self, **kwargs)
+        # Did not converge within max_iterations
+        return None
 
     def __repr__(self) -> str:
         """String representation."""

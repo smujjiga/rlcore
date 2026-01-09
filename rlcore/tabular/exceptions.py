@@ -23,3 +23,9 @@ class InvalidDiscountFactorError(ValueError):
     """Raised when discount factor is not in [0, 1]."""
 
     pass
+
+
+class SingularMatrixError(ValueError):
+    """Raised when matrix inversion fails due to singular matrix."""
+
+    pass

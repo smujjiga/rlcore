@@ -5,9 +5,10 @@ from collections.abc import Sequence
 import numpy as np
 from numpy.typing import NDArray
 
+from rlcore.tabular.exceptions import SingularMatrixError
 from rlcore.tabular.markov_process import MarkovProcess
 from rlcore.tabular.type_aliases import DiscountFactor
-from rlcore.tabular.validation import validate_discount_factor
+from rlcore.tabular.validation import validate_discount_factor, validate_reward_function
 
 
 class MarkovRewardProcess[State](MarkovProcess[State]):
@@ -34,11 +35,7 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         super().__init__(states, transition_matrix)
 
         # Validate and store reward function
-        if reward_function.shape != (self._num_states,):
-            raise ValueError(
-                f"Reward function must have shape ({self._num_states},), "
-                f"got {reward_function.shape}"
-            )
+        validate_reward_function(reward_function, self._num_states)
         self._reward_function = reward_function.copy()
 
         # Validate and store discount factor
@@ -63,7 +60,7 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         num_steps: int,
         rng: np.random.Generator | None = None,
     ) -> tuple[list[State], list[float]]:
-        trajectory = self.episode(initial_state, num_steps, rng)
+        trajectory = super().episode(initial_state, num_steps, rng)
         rewards = [self.get_reward(state) for state in trajectory]
         return trajectory, rewards
 
@@ -75,7 +72,21 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         """Compute discounted return from a reward sequence.
 
         G_t = R_t + γR_{t+1} + γ²R_{t+2} + ...
+
+        Args:
+            rewards: Sequence of reward values.
+            start_index: Index to start computing return from.
+
+        Returns:
+            Discounted return starting from start_index.
+
+        Raises:
+            ValueError: If start_index is out of bounds.
         """
+        if start_index < 0 or start_index > len(rewards):
+            raise ValueError(
+                f"start_index must be in [0, {len(rewards)}], got {start_index}"
+            )
         discounted_return = 0.0
         for i, reward in enumerate(rewards[start_index:]):
             discounted_return += (self._discount_factor**i) * reward
@@ -98,7 +109,7 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         if method == "analytical":
             return self._compute_value_function_analytical()
         elif method == "iterative":
-            return self._ccompute_value_function_iterative(tolerance, max_iterations)
+            return self._compute_value_function_iterative(tolerance, max_iterations)
         else:
             raise ValueError(
                 f"Unknown method: {method}. Use 'analytical' or 'iterative'."
@@ -108,6 +119,10 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         """Compute value function via matrix inversion.
 
         Solves V = (I - γP)^{-1} R directly.
+
+        Raises:
+            SingularMatrixError: If (I - γP) is singular (e.g., when γ=1.0
+                and P has eigenvalue 1).
         """
         identity = np.eye(self._num_states)
         matrix = identity - self._discount_factor * self._transition_matrix
@@ -115,10 +130,17 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
         # Using np.linalg.solve(A, b) is numerically more stable and efficient than
         # computing np.linalg.inv(A) @ b. It uses LU decomposition internally rather
         # than explicitly computing the inverse.
-        value_function = np.linalg.solve(matrix, self._reward_function)
+        try:
+            value_function = np.linalg.solve(matrix, self._reward_function)
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(
+                f"Cannot compute value function: matrix (I - γP) is singular. "
+                f"This often occurs when γ=1.0. Try using method='iterative' or "
+                f"a discount factor < 1.0. Original error: {e}"
+            ) from e
         return value_function
 
-    def _ccompute_value_function_iterative(
+    def _compute_value_function_iterative(
         self,
         tolerance: float,
         max_iterations: int,
@@ -142,44 +164,6 @@ class MarkovRewardProcess[State](MarkovProcess[State]):
 
         # Return current estimate even if not fully converged
         return value
-
-    def plot_value_function(self, method: str = "analytical", **kwargs):
-        """Plot value function as a bar chart.
-
-        Requires matplotlib to be installed.
-
-        Args:
-            method: Value computation method ('analytical' or 'iterative').
-            **kwargs: Keyword arguments passed to plot_value_function().
-                Common options:
-                - figsize: Figure size tuple (default: (10, 6))
-                - color: Bar color (default: 'steelblue')
-                - title: Plot title (default: auto-generated)
-
-        Returns:
-            Matplotlib Figure object.
-
-        Raises:
-            ImportError: If matplotlib is not installed.
-
-        Example:
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
-            >>> states = ["A", "B"]
-            >>> P = np.array([[0.7, 0.3], [0.4, 0.6]])
-            >>> R = np.array([1.0, -1.0])
-            >>> mrp = MarkovRewardProcess(states, P, R, gamma=0.9)
-            >>> fig = mrp.plot_value_function()
-            >>> plt.show()
-        """
-        from rlcore.tabular.visualization import plot_value_function
-
-        return plot_value_function(self, method=method, **kwargs)
-
-
-    def plot(self, **kwargs):
-        from rlcore.tabular.visualization import plot_reward_transition_graph
-        return plot_reward_transition_graph(self, **kwargs)
 
     def __repr__(self) -> str:
         """String representation."""

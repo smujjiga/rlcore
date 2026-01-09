@@ -22,7 +22,9 @@ select = [
 ]
 
 # Ignore specific rules
-ignore = []
+ignore = [
+    "N806",  # Allow uppercase variable names (P, R) to match RL literature conventions
+]
 
 # Allow autofix for all enabled rules
 fixable = ["ALL"]
